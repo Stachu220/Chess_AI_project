@@ -202,7 +202,7 @@ app = Flask(__name__)
 
 # Strona główna aplikacji Flask - do czarnej roboty przez norberta
 @app.route("/")
-def main():
+def main(message=""):
     global licznik, szachownica
     if licznik == 1:
         licznik += 1
@@ -213,22 +213,19 @@ def main():
     ret += '<form action="/nowa_gra/" method="post"><button name="Nowa Gra" type="submit">Nowa Gra</button></form>'
     ret += '<form action="/cofnij/" method="post"><button name="Cofnij" type="submit">Cofnij ostatni ruch</button></form>'
     ret += '<form action="/ruch/"><input type="submit" value="Wykonaj ruch:"><input name="ruch" type="text"></input></form>'
-    ret += '<form action="/dev_zero/" method="post"><button name="Ruch komputera" type="submit">Wykonaj ruch Dev-Zero</button></form>'
     ret += '<form action="/silnik/" method="post"><button name="Ruch Stockfish" type="submit">Wykonaj ruch Stockfish</button></form>'
-    if szachownica.is_stalemate():
-        # print("Remis")
-        pass
+    if message:
+        ret += '<div>{}</div>'.format(message)
+    elif szachownica.is_stalemate():
+        ret += '<div>Remis</div>'
     elif szachownica.is_checkmate():
-        # print("Szach mat")
-        pass
+        ret += '<div>Szach mat</div>'
     elif szachownica.is_insufficient_material():
-        # print("Remis z powodu niewystarczajacego materialu")
-        pass
+        ret += '<div>Remis z powodu niewystarczajacego materialu</div>'
     elif szachownica.is_check():
-        # print("Szach")
-        pass
+        ret += '<div>Szach</div>'
+    ret += '</body></html>'
     return ret
-
 
 # Wyświetlanie szachownicy
 @app.route("/szachownica.svg/")
@@ -239,63 +236,46 @@ def szachownica_svg():
 # Ruch człowieka
 @app.route("/ruch/")
 def ruch():
+    message = ""
     try:
         ruch = request.args.get('ruch', default="")
         szachownica.push_san(ruch)
-    except Exception:
-        traceback.print_exc()
-    return main()
-
-
-# Otrzymanie ruchu człowieka
-@app.route("/odbierz/", methods=['POST'])
-def odbierz():
-    try:
-        None
-    except Exception:
-        None
-    return main()
-
-
-# Wykonanie ruchu Dev-Zero
-@app.route("/dev_zero/", methods=['POST'])
-def dev_zero():
-    try:
         ruch_dev_zero()
     except Exception:
         traceback.print_exc()
-        # print("Nielegalny ruch, spróbuj ponownie")
-    return main()
-
+        message = "Nielegalny ruch, spróbuj ponownie"
+    return main(message)
 
 # Wykonanie ruchu za pomocą silnika UCI
 @app.route("/silnik/", methods=['POST'])
 def silnik():
+    message = ""
     try:
         ruch_stockfish()
     except Exception:
         traceback.print_exc()
-        # print("Nielegalny ruch, spróbuj ponownie")
-    return main()
+        message = "Nielegalny ruch, spróbuj ponownie"
+    return main(message)
 
 
 # Rozpoczęcie nowej gry
 @app.route("/nowa_gra/", methods=['POST'])
 def nowa_gra():
-    # print("Szachownica zresetowana, powodzenia w kolejnej grze.")
+    message = "Szachownica zresetowana, powodzenia w kolejnej grze."
     szachownica.reset()
-    return main()
+    return main(message)
 
 
 # Cofnięcie ostatniego ruchu
 @app.route("/cofnij/", methods=['POST'])
 def cofnij():
+    message = ""
     try:
         szachownica.pop()
     except Exception:
         traceback.print_exc()
-        # print("Nie ma ruchu do cofnięcia")
-    return main()
+        message = "Nie ma ruchu do cofnięcia"
+    return main(message)
 
 
 # Główna funkcja

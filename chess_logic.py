@@ -1,10 +1,7 @@
 import chess
 import chess.svg
 import chess.polyglot
-import time
-import traceback
 import chess.engine
-from flask import Flask, Response, request
 
 # Tabele oceniania pozycji figur na szachownicy
 tabela_pionkow = [
@@ -195,91 +192,3 @@ def ruch_stockfish():
         "engines/stockfish.exe")
     ruch = silnik.play(szachownica, chess.engine.Limit(time=0.1))
     szachownica.push(ruch.move)
-
-
-app = Flask(__name__)
-
-
-# Strona główna aplikacji Flask - do czarnej roboty przez norberta
-@app.route("/")
-def main(message=""):
-    global licznik, szachownica
-    if licznik == 1:
-        licznik += 1
-    ret = '<html><head>'
-    ret += '<style>input {font-size: 20px; } button { font-size: 20px; }</style>'
-    ret += '</head><body>'
-    ret += '<img width=510 height=510 src="/szachownica.svg?%f"></img></br>' % time.time()
-    ret += '<form action="/nowa_gra/" method="post"><button name="Nowa Gra" type="submit">Nowa Gra</button></form>'
-    ret += '<form action="/cofnij/" method="post"><button name="Cofnij" type="submit">Cofnij ostatni ruch</button></form>'
-    ret += '<form action="/ruch/"><input type="submit" value="Wykonaj ruch:"><input name="ruch" type="text"></input></form>'
-    ret += '<form action="/silnik/" method="post"><button name="Ruch Stockfish" type="submit">Wykonaj ruch Stockfish</button></form>'
-    if message:
-        ret += '<div>{}</div>'.format(message)
-    elif szachownica.is_stalemate():
-        ret += '<div>Remis</div>'
-    elif szachownica.is_checkmate():
-        ret += '<div>Szach mat</div>'
-    elif szachownica.is_insufficient_material():
-        ret += '<div>Remis z powodu niewystarczajacego materialu</div>'
-    elif szachownica.is_check():
-        ret += '<div>Szach</div>'
-    ret += '</body></html>'
-    return ret
-
-# Wyświetlanie szachownicy
-@app.route("/szachownica.svg/")
-def szachownica_svg():
-    return Response(chess.svg.board(board=szachownica, size=700), mimetype='image/svg+xml')
-
-
-# Ruch człowieka
-@app.route("/ruch/")
-def ruch():
-    message = ""
-    try:
-        ruch = request.args.get('ruch', default="")
-        szachownica.push_san(ruch)
-        ruch_dev_zero()
-    except Exception:
-        traceback.print_exc()
-        message = "Nielegalny ruch, spróbuj ponownie"
-    return main(message)
-
-# Wykonanie ruchu za pomocą silnika UCI
-@app.route("/silnik/", methods=['POST'])
-def silnik():
-    message = ""
-    try:
-        ruch_stockfish()
-    except Exception:
-        traceback.print_exc()
-        message = "Nielegalny ruch, spróbuj ponownie"
-    return main(message)
-
-
-# Rozpoczęcie nowej gry
-@app.route("/nowa_gra/", methods=['POST'])
-def nowa_gra():
-    message = "Szachownica zresetowana, powodzenia w kolejnej grze."
-    szachownica.reset()
-    return main(message)
-
-
-# Cofnięcie ostatniego ruchu
-@app.route("/cofnij/", methods=['POST'])
-def cofnij():
-    message = ""
-    try:
-        szachownica.pop()
-    except Exception:
-        traceback.print_exc()
-        message = "Nie ma ruchu do cofnięcia"
-    return main(message)
-
-
-# Główna funkcja
-if __name__ == '__main__':
-    licznik = 1
-    szachownica = chess.Board()
-    app.run()

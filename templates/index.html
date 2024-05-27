@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Szachy</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="image">
+            <img src="{{ image_url }}"></img>
+        </div>
+        <div class="buttons">
+            <form action="/nowa_gra/" method="post">
+                <button name="Nowa Gra" type="submit">Nowa Gra</button>
+            </form>
+            <form action="/ruch/">
+                <input type="text" name="ruch" placeholder="Ruch"></input>
+                <button type="submit">Wykonaj</button>
+            </form>
+            <form action="/cofnij/" method="post">
+                <button name="Cofnij" type="submit">Cofnij ostatni ruch</button>
+            </form>
+            <form action="/silnik/" method="post">
+                <button name="Ruch Stockfish" type="submit">Wykonaj ruch Stockfish</button>
+            </form>
+        </div>
+        <div class="status">{{ status }}</div>
+    </div>
+</body>
+</html>

@@ -3,7 +3,9 @@ import time
 import traceback
 import chess
 import chess.svg
-from chess_logic import ocen_szachownice, alfa_beta, szachowe_quiesce, wybierz_ruch, ruch_dev_zero, ruch_stockfish
+from chess_logic import ocen_szachownice, alfa_beta, szachowe_quiesce, wybierz_ruch, ruch_dev_zero
+from szachownica import szachownica
+
 app = Flask(__name__)
 
 @app.route("/")
@@ -44,7 +46,7 @@ def ruch():
 def silnik():
     message = ""
     try:
-        ruch_stockfish()
+        ruch_dev_zero()
     except Exception:
         traceback.print_exc()
         message = "Nielegalny ruch, spróbuj ponownie"
@@ -70,5 +72,4 @@ def cofnij():
 
 if __name__ == '__main__':
     licznik = 1
-    szachownica = chess.Board()
     app.run()

@@ -2,6 +2,7 @@ import chess
 import chess.svg
 import chess.polyglot
 import chess.engine
+from szachownica import szachownica
 
 # Tabele oceniania pozycji figur na szachownicy
 tabela_pionkow = [
@@ -89,7 +90,7 @@ def ocen_szachownice():
     hetmany_czarne = len(szachownica.pieces(chess.QUEEN, chess.BLACK))
 
     # Obliczanie wartości materiału
-    material = 100 * (pionki_biale - pionki_czarne) + 320 * (skoczki_biale - skoczki_czarne) + 330 * (goncy_biali - goncy_czarni) + 500 * (wieze_biale - wieze_czarne) + 900 * (hetmany_biale - hetmany_czarne)
+    material = 100 * (pionki_biale - pionki_czarne) + 300 * (skoczki_biale - skoczki_czarne) + 300 * (goncy_biali - goncy_czarni) + 500 * (wieze_biale - wieze_czarne) + 900 * (hetmany_biale - hetmany_czarne)
 
     # Obliczanie wartości pozycji na podstawie tablic oceny
     pozycja_pionkow = sum([tabela_pionkow[i] for i in szachownica.pieces(chess.PAWN, chess.WHITE)])
@@ -161,7 +162,7 @@ def szachowe_quiesce(alfa, beta):
 # Wybieranie ruchu na podstawie głębokości przeszukiwania
 def wybierz_ruch(glebokosc):
     try:
-        ruch = chess.polyglot.MemoryMappedReader("/books/human.bin").weighted_choice(szachownica).move
+        ruch = chess.polyglot.MemoryMappedReader("./books/human.bin").weighted_choice(szachownica).move
         return ruch
     except:
         najlepszy_ruch = chess.Move.null()
@@ -184,11 +185,3 @@ def wybierz_ruch(glebokosc):
 def ruch_dev_zero():
     ruch = wybierz_ruch(3)
     szachownica.push(ruch)
-
-
-# Wykonanie ruchu Stockfish
-def ruch_stockfish():
-    silnik = chess.engine.SimpleEngine.popen_uci(
-        "engines/stockfish.exe")
-    ruch = silnik.play(szachownica, chess.engine.Limit(time=0.1))
-    szachownica.push(ruch.move)

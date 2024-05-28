@@ -2,10 +2,12 @@ import chess
 import chess.svg
 import chess.polyglot
 import chess.engine
+import numpy as np
+from numba import jit
 from szachownica import szachownica
 
 # Tabele oceniania pozycji figur na szachownicy
-tabela_pionkow = [
+tabela_pionkow = np.array([
     0, 0, 0, 0, 0, 0, 0, 0,
     5, 10, 10, -20, -20, 10, 10, 5,
     5, -5, -10, 0, 0, -10, -5, 5,
@@ -13,9 +15,9 @@ tabela_pionkow = [
     5, 5, 10, 25, 25, 10, 5, 5,
     10, 10, 20, 30, 30, 20, 10, 10,
     50, 50, 50, 50, 50, 50, 50, 50,
-    0, 0, 0, 0, 0, 0, 0, 0]
+    0, 0, 0, 0, 0, 0, 0, 0])
 
-tabela_skoczkow = [
+tabela_skoczkow = np.array([
     -50, -40, -30, -30, -30, -30, -40, -50,
     -40, -20, 0, 5, 5, 0, -20, -40,
     -30, 5, 10, 15, 15, 10, 5, -30,
@@ -23,9 +25,9 @@ tabela_skoczkow = [
     -30, 5, 15, 20, 20, 15, 5, -30,
     -30, 0, 10, 15, 15, 10, 0, -30,
     -40, -20, 0, 0, 0, 0, -20, -40,
-    -50, -40, -30, -30, -30, -30, -40, -50]
+    -50, -40, -30, -30, -30, -30, -40, -50])
 
-tabela_goncow = [
+tabela_goncow = np.array([
     -20, -10, -10, -10, -10, -10, -10, -20,
     -10, 5, 0, 0, 0, 0, 5, -10,
     -10, 10, 10, 10, 10, 10, 10, -10,
@@ -33,9 +35,9 @@ tabela_goncow = [
     -10, 5, 5, 10, 10, 5, 5, -10,
     -10, 0, 5, 10, 10, 5, 0, -10,
     -10, 0, 0, 0, 0, 0, 0, -10,
-    -20, -10, -10, -10, -10, -10, -10, -20]
+    -20, -10, -10, -10, -10, -10, -10, -20])
 
-tabela_wiez = [
+tabela_wiez = np.array([
     0, 0, 0, 5, 5, 0, 0, 0,
     -5, 0, 0, 0, 0, 0, 0, -5,
     -5, 0, 0, 0, 0, 0, 0, -5,
@@ -43,9 +45,9 @@ tabela_wiez = [
     -5, 0, 0, 0, 0, 0, 0, -5,
     -5, 0, 0, 0, 0, 0, 0, -5,
     5, 10, 10, 10, 10, 10, 10, 5,
-    0, 0, 0, 0, 0, 0, 0, 0]
+    0, 0, 0, 0, 0, 0, 0, 0])
 
-tabela_hetmanow = [
+tabela_hetmanow = np.array([
     -20, -10, -10, -5, -5, -10, -10, -20,
     -10, 0, 0, 0, 0, 0, 0, -10,
     -10, 5, 5, 5, 5, 5, 0, -10,
@@ -53,9 +55,9 @@ tabela_hetmanow = [
     -5, 0, 5, 5, 5, 5, 0, -5,
     -10, 0, 5, 5, 5, 5, 0, -10,
     -10, 0, 0, 0, 0, 0, 0, -10,
-    -20, -10, -10, -5, -5, -10, -10, -20]
+    -20, -10, -10, -5, -5, -10, -10, -20])
 
-tabela_krolow = [
+tabela_krolow = np.array([
     20, 30, 10, 0, 0, 10, 30, 20,
     20, 20, 0, 0, 0, 0, 20, 20,
     -10, -20, -20, -20, -20, -20, -20, -10,
@@ -63,9 +65,10 @@ tabela_krolow = [
     -30, -40, -40, -50, -50, -40, -40, -30,
     -30, -40, -40, -50, -50, -40, -40, -30,
     -30, -40, -40, -50, -50, -40, -40, -30,
-    -30, -40, -40, -50, -50, -40, -40, -30]
+    -30, -40, -40, -50, -50, -40, -40, -30])
 
 # Funkcja oceniająca aktualną sytuację na szachownicy
+@jit(nopython=True)
 def ocen_szachownice():
     if szachownica.is_checkmate():
         if szachownica.turn:
@@ -93,23 +96,23 @@ def ocen_szachownice():
     material = 100 * (pionki_biale - pionki_czarne) + 300 * (skoczki_biale - skoczki_czarne) + 300 * (goncy_biali - goncy_czarni) + 500 * (wieze_biale - wieze_czarne) + 900 * (hetmany_biale - hetmany_czarne)
 
     # Obliczanie wartości pozycji na podstawie tablic oceny
-    pozycja_pionkow = sum([tabela_pionkow[i] for i in szachownica.pieces(chess.PAWN, chess.WHITE)])
-    pozycja_pionkow = pozycja_pionkow + sum([-tabela_pionkow[chess.square_mirror(i)]
+    pozycja_pionkow = np.sum([tabela_pionkow[i] for i in szachownica.pieces(chess.PAWN, chess.WHITE)])
+    pozycja_pionkow = pozycja_pionkow + np.sum([-tabela_pionkow[chess.square_mirror(i)]
                            for i in szachownica.pieces(chess.PAWN, chess.BLACK)])
-    pozycja_skoczkow = sum([tabela_skoczkow[i] for i in szachownica.pieces(chess.KNIGHT, chess.WHITE)])
-    pozycja_skoczkow = pozycja_skoczkow + sum([-tabela_skoczkow[chess.square_mirror(i)]
+    pozycja_skoczkow = np.sum([tabela_skoczkow[i] for i in szachownica.pieces(chess.KNIGHT, chess.WHITE)])
+    pozycja_skoczkow = pozycja_skoczkow + np.sum([-tabela_skoczkow[chess.square_mirror(i)]
                                for i in szachownica.pieces(chess.KNIGHT, chess.BLACK)])
-    pozycja_goncow = sum([tabela_goncow[i] for i in szachownica.pieces(chess.BISHOP, chess.WHITE)])
-    pozycja_goncow = pozycja_goncow + sum([-tabela_goncow[chess.square_mirror(i)]
+    pozycja_goncow = np.sum([tabela_goncow[i] for i in szachownica.pieces(chess.BISHOP, chess.WHITE)])
+    pozycja_goncow = pozycja_goncow + np.sum([-tabela_goncow[chess.square_mirror(i)]
                                for i in szachownica.pieces(chess.BISHOP, chess.BLACK)])
-    pozycja_wiez = sum([tabela_wiez[i] for i in szachownica.pieces(chess.ROOK, chess.WHITE)])
-    pozycja_wiez = pozycja_wiez + sum([-tabela_wiez[chess.square_mirror(i)]
+    pozycja_wiez = np.sum([tabela_wiez[i] for i in szachownica.pieces(chess.ROOK, chess.WHITE)])
+    pozycja_wiez = pozycja_wiez + np.sum([-tabela_wiez[chess.square_mirror(i)]
                            for i in szachownica.pieces(chess.ROOK, chess.BLACK)])
-    pozycja_hetmanow = sum([tabela_hetmanow[i] for i in szachownica.pieces(chess.QUEEN, chess.WHITE)])
-    pozycja_hetmanow = pozycja_hetmanow + sum([-tabela_hetmanow[chess.square_mirror(i)]
+    pozycja_hetmanow = np.sum([tabela_hetmanow[i] for i in szachownica.pieces(chess.QUEEN, chess.WHITE)])
+    pozycja_hetmanow = pozycja_hetmanow + np.sum([-tabela_hetmanow[chess.square_mirror(i)]
                              for i in szachownica.pieces(chess.QUEEN, chess.BLACK)])
-    pozycja_krolow = sum([tabela_krolow[i] for i in szachownica.pieces(chess.KING, chess.WHITE)])
-    pozycja_krolow = pozycja_krolow + sum([-tabela_krolow[chess.square_mirror(i)]
+    pozycja_krolow = np.sum([tabela_krolow[i] for i in szachownica.pieces(chess.KING, chess.WHITE)])
+    pozycja_krolow = pozycja_krolow + np.sum([-tabela_krolow[chess.square_mirror(i)]
                            for i in szachownica.pieces(chess.KING, chess.BLACK)])
 
     # Końcowa ocena szachownicy

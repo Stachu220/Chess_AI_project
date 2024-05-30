@@ -1,13 +1,13 @@
 import chess
 import chess.svg
 import chess.polyglot
-import time
-import traceback
 import chess.engine
-from flask import Flask, Response, request
+import numpy as np
+from numba import jit
+from szachownica import szachownica
 
 # Tabele oceniania pozycji figur na szachownicy
-tabela_pionkow = [
+tabela_pionkow = np.array([
     0, 0, 0, 0, 0, 0, 0, 0,
     5, 10, 10, -20, -20, 10, 10, 5,
     5, -5, -10, 0, 0, -10, -5, 5,
@@ -15,9 +15,9 @@ tabela_pionkow = [
     5, 5, 10, 25, 25, 10, 5, 5,
     10, 10, 20, 30, 30, 20, 10, 10,
     50, 50, 50, 50, 50, 50, 50, 50,
-    0, 0, 0, 0, 0, 0, 0, 0]
+    0, 0, 0, 0, 0, 0, 0, 0])
 
-tabela_skoczkow = [
+tabela_skoczkow = np.array([
     -50, -40, -30, -30, -30, -30, -40, -50,
     -40, -20, 0, 5, 5, 0, -20, -40,
     -30, 5, 10, 15, 15, 10, 5, -30,
@@ -25,9 +25,9 @@ tabela_skoczkow = [
     -30, 5, 15, 20, 20, 15, 5, -30,
     -30, 0, 10, 15, 15, 10, 0, -30,
     -40, -20, 0, 0, 0, 0, -20, -40,
-    -50, -40, -30, -30, -30, -30, -40, -50]
+    -50, -40, -30, -30, -30, -30, -40, -50])
 
-tabela_goncow = [
+tabela_goncow = np.array([
     -20, -10, -10, -10, -10, -10, -10, -20,
     -10, 5, 0, 0, 0, 0, 5, -10,
     -10, 10, 10, 10, 10, 10, 10, -10,
@@ -35,9 +35,9 @@ tabela_goncow = [
     -10, 5, 5, 10, 10, 5, 5, -10,
     -10, 0, 5, 10, 10, 5, 0, -10,
     -10, 0, 0, 0, 0, 0, 0, -10,
-    -20, -10, -10, -10, -10, -10, -10, -20]
+    -20, -10, -10, -10, -10, -10, -10, -20])
 
-tabela_wiez = [
+tabela_wiez = np.array([
     0, 0, 0, 5, 5, 0, 0, 0,
     -5, 0, 0, 0, 0, 0, 0, -5,
     -5, 0, 0, 0, 0, 0, 0, -5,
@@ -45,9 +45,9 @@ tabela_wiez = [
     -5, 0, 0, 0, 0, 0, 0, -5,
     -5, 0, 0, 0, 0, 0, 0, -5,
     5, 10, 10, 10, 10, 10, 10, 5,
-    0, 0, 0, 0, 0, 0, 0, 0]
+    0, 0, 0, 0, 0, 0, 0, 0])
 
-tabela_hetmanow = [
+tabela_hetmanow = np.array([
     -20, -10, -10, -5, -5, -10, -10, -20,
     -10, 0, 0, 0, 0, 0, 0, -10,
     -10, 5, 5, 5, 5, 5, 0, -10,
@@ -55,9 +55,9 @@ tabela_hetmanow = [
     -5, 0, 5, 5, 5, 5, 0, -5,
     -10, 0, 5, 5, 5, 5, 0, -10,
     -10, 0, 0, 0, 0, 0, 0, -10,
-    -20, -10, -10, -5, -5, -10, -10, -20]
+    -20, -10, -10, -5, -5, -10, -10, -20])
 
-tabela_krolow = [
+tabela_krolow = np.array([
     20, 30, 10, 0, 0, 10, 30, 20,
     20, 20, 0, 0, 0, 0, 20, 20,
     -10, -20, -20, -20, -20, -20, -20, -10,
@@ -65,9 +65,10 @@ tabela_krolow = [
     -30, -40, -40, -50, -50, -40, -40, -30,
     -30, -40, -40, -50, -50, -40, -40, -30,
     -30, -40, -40, -50, -50, -40, -40, -30,
-    -30, -40, -40, -50, -50, -40, -40, -30]
+    -30, -40, -40, -50, -50, -40, -40, -30])
 
 # Funkcja oceniająca aktualną sytuację na szachownicy
+#@jit(nopython=True)
 def ocen_szachownice():
     if szachownica.is_checkmate():
         if szachownica.turn:
@@ -92,26 +93,26 @@ def ocen_szachownice():
     hetmany_czarne = len(szachownica.pieces(chess.QUEEN, chess.BLACK))
 
     # Obliczanie wartości materiału
-    material = 100 * (pionki_biale - pionki_czarne) + 320 * (skoczki_biale - skoczki_czarne) + 330 * (goncy_biali - goncy_czarni) + 500 * (wieze_biale - wieze_czarne) + 900 * (hetmany_biale - hetmany_czarne)
+    material = 100 * (pionki_biale - pionki_czarne) + 300 * (skoczki_biale - skoczki_czarne) + 300 * (goncy_biali - goncy_czarni) + 500 * (wieze_biale - wieze_czarne) + 900 * (hetmany_biale - hetmany_czarne)
 
     # Obliczanie wartości pozycji na podstawie tablic oceny
-    pozycja_pionkow = sum([tabela_pionkow[i] for i in szachownica.pieces(chess.PAWN, chess.WHITE)])
-    pozycja_pionkow = pozycja_pionkow + sum([-tabela_pionkow[chess.square_mirror(i)]
+    pozycja_pionkow = np.sum([tabela_pionkow[i] for i in szachownica.pieces(chess.PAWN, chess.WHITE)])
+    pozycja_pionkow = pozycja_pionkow + np.sum([-tabela_pionkow[chess.square_mirror(i)]
                            for i in szachownica.pieces(chess.PAWN, chess.BLACK)])
-    pozycja_skoczkow = sum([tabela_skoczkow[i] for i in szachownica.pieces(chess.KNIGHT, chess.WHITE)])
-    pozycja_skoczkow = pozycja_skoczkow + sum([-tabela_skoczkow[chess.square_mirror(i)]
+    pozycja_skoczkow = np.sum([tabela_skoczkow[i] for i in szachownica.pieces(chess.KNIGHT, chess.WHITE)])
+    pozycja_skoczkow = pozycja_skoczkow + np.sum([-tabela_skoczkow[chess.square_mirror(i)]
                                for i in szachownica.pieces(chess.KNIGHT, chess.BLACK)])
-    pozycja_goncow = sum([tabela_goncow[i] for i in szachownica.pieces(chess.BISHOP, chess.WHITE)])
-    pozycja_goncow = pozycja_goncow + sum([-tabela_goncow[chess.square_mirror(i)]
+    pozycja_goncow = np.sum([tabela_goncow[i] for i in szachownica.pieces(chess.BISHOP, chess.WHITE)])
+    pozycja_goncow = pozycja_goncow + np.sum([-tabela_goncow[chess.square_mirror(i)]
                                for i in szachownica.pieces(chess.BISHOP, chess.BLACK)])
-    pozycja_wiez = sum([tabela_wiez[i] for i in szachownica.pieces(chess.ROOK, chess.WHITE)])
-    pozycja_wiez = pozycja_wiez + sum([-tabela_wiez[chess.square_mirror(i)]
+    pozycja_wiez = np.sum([tabela_wiez[i] for i in szachownica.pieces(chess.ROOK, chess.WHITE)])
+    pozycja_wiez = pozycja_wiez + np.sum([-tabela_wiez[chess.square_mirror(i)]
                            for i in szachownica.pieces(chess.ROOK, chess.BLACK)])
-    pozycja_hetmanow = sum([tabela_hetmanow[i] for i in szachownica.pieces(chess.QUEEN, chess.WHITE)])
-    pozycja_hetmanow = pozycja_hetmanow + sum([-tabela_hetmanow[chess.square_mirror(i)]
+    pozycja_hetmanow = np.sum([tabela_hetmanow[i] for i in szachownica.pieces(chess.QUEEN, chess.WHITE)])
+    pozycja_hetmanow = pozycja_hetmanow + np.sum([-tabela_hetmanow[chess.square_mirror(i)]
                              for i in szachownica.pieces(chess.QUEEN, chess.BLACK)])
-    pozycja_krolow = sum([tabela_krolow[i] for i in szachownica.pieces(chess.KING, chess.WHITE)])
-    pozycja_krolow = pozycja_krolow + sum([-tabela_krolow[chess.square_mirror(i)]
+    pozycja_krolow = np.sum([tabela_krolow[i] for i in szachownica.pieces(chess.KING, chess.WHITE)])
+    pozycja_krolow = pozycja_krolow + np.sum([-tabela_krolow[chess.square_mirror(i)]
                            for i in szachownica.pieces(chess.KING, chess.BLACK)])
 
     # Końcowa ocena szachownicy
@@ -184,102 +185,7 @@ def wybierz_ruch(glebokosc):
 
 
 # Wykonanie ruchu Dev-Zero
-def ruch_dev_zero():
+def ruch_AI():
     ruch = wybierz_ruch(3)
     szachownica.push(ruch)
-
-
-# Wykonanie ruchu Stockfish
-def ruch_stockfish():
-    silnik = chess.engine.SimpleEngine.popen_uci(
-        "engines/stockfish.exe")
-    ruch = silnik.play(szachownica, chess.engine.Limit(time=0.1))
-    szachownica.push(ruch.move)
-
-
-app = Flask(__name__)
-
-
-# Strona główna aplikacji Flask - do czarnej roboty przez norberta
-@app.route("/")
-def main(message=""):
-    global licznik, szachownica
-    if licznik == 1:
-        licznik += 1
-    ret = '<html><head>'
-    ret += '<style>input {font-size: 20px; } button { font-size: 20px; }</style>'
-    ret += '</head><body>'
-    ret += '<img width=510 height=510 src="/szachownica.svg?%f"></img></br>' % time.time()
-    ret += '<form action="/nowa_gra/" method="post"><button name="Nowa Gra" type="submit">Nowa Gra</button></form>'
-    ret += '<form action="/cofnij/" method="post"><button name="Cofnij" type="submit">Cofnij ostatni ruch</button></form>'
-    ret += '<form action="/ruch/"><input type="submit" value="Wykonaj ruch:"><input name="ruch" type="text"></input></form>'
-    ret += '<form action="/silnik/" method="post"><button name="Ruch Stockfish" type="submit">Wykonaj ruch Stockfish</button></form>'
-    if message:
-        ret += '<div>{}</div>'.format(message)
-    elif szachownica.is_stalemate():
-        ret += '<div>Remis</div>'
-    elif szachownica.is_checkmate():
-        ret += '<div>Szach mat</div>'
-    elif szachownica.is_insufficient_material():
-        ret += '<div>Remis z powodu niewystarczajacego materialu</div>'
-    elif szachownica.is_check():
-        ret += '<div>Szach</div>'
-    ret += '</body></html>'
-    return ret
-
-# Wyświetlanie szachownicy
-@app.route("/szachownica.svg/")
-def szachownica_svg():
-    return Response(chess.svg.board(board=szachownica, size=700), mimetype='image/svg+xml')
-
-
-# Ruch człowieka
-@app.route("/ruch/")
-def ruch():
-    message = ""
-    try:
-        ruch = request.args.get('ruch', default="")
-        szachownica.push_san(ruch)
-        ruch_dev_zero()
-    except Exception:
-        traceback.print_exc()
-        message = "Nielegalny ruch, spróbuj ponownie"
-    return main(message)
-
-# Wykonanie ruchu za pomocą silnika UCI
-@app.route("/silnik/", methods=['POST'])
-def silnik():
-    message = ""
-    try:
-        ruch_stockfish()
-    except Exception:
-        traceback.print_exc()
-        message = "Nielegalny ruch, spróbuj ponownie"
-    return main(message)
-
-
-# Rozpoczęcie nowej gry
-@app.route("/nowa_gra/", methods=['POST'])
-def nowa_gra():
-    message = "Szachownica zresetowana, powodzenia w kolejnej grze."
-    szachownica.reset()
-    return main(message)
-
-
-# Cofnięcie ostatniego ruchu
-@app.route("/cofnij/", methods=['POST'])
-def cofnij():
-    message = ""
-    try:
-        szachownica.pop()
-    except Exception:
-        traceback.print_exc()
-        message = "Nie ma ruchu do cofnięcia"
-    return main(message)
-
-
-# Główna funkcja
-if __name__ == '__main__':
-    licznik = 1
-    szachownica = chess.Board()
-    app.run()
+    print(ruch)

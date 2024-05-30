@@ -1,0 +1,82 @@
+@import url('https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..900;1,300..900&display=swap');
+
+:root
+{
+    --color-one: #eeeeee;
+    --color-two: #686D76;
+    --color-three: #373A40;
+    --color-four: #DC5F00;
+
+    --width-size: 600px;
+}
+
+body
+{
+    margin: 0;
+    padding: 0;
+    font-family: "Rubik", sans-serif;
+    font-optical-sizing: auto;
+    font-style: normal;
+    background-color: var(--color-three);
+}
+
+.container
+{
+    margin: 0 auto;
+    justify-content: center;
+    display: grid;
+    grid-template-rows: 5fr 1fr;
+    align-items: center;
+    width: var(--width-size);
+    padding-top: 2rem;
+}
+
+img
+{
+    width: 600px;
+}   
+
+.buttons
+{
+    width: 600px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+button, input
+{
+    font-size: 1.5rem;
+    text-transform: lowercase;
+    font-weight: bold;
+    margin: 0.5rem 0.5rem;
+    background-color: var(--color-two);
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    border-radius: 1rem;
+    padding: 0.5rem 1rem;
+}
+
+button:hover
+{
+    background-color: var(--color-four);
+    color: var(--color-one);
+}
+
+input
+{
+    width: 100px;
+    background-color: #eeeeee;
+}
+
+
+.status
+{
+    text-align: center;
+    text-transform: uppercase;
+    font-weight: bold;
+    font-size: 2rem;
+    color: var(--color-one);
+}

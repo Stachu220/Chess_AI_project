@@ -3,7 +3,6 @@ import chess.svg
 import chess.polyglot
 import chess.engine
 import numpy as np
-from numba import jit
 from szachownica import szachownica
 
 # Tabele oceniania pozycji figur na szachownicy
@@ -68,7 +67,6 @@ tabela_krolow = np.array([
     -30, -40, -40, -50, -50, -40, -40, -30])
 
 # Funkcja oceniająca aktualną sytuację na szachownicy
-#@jit(nopython=True)
 def ocen_szachownice():
     if szachownica.is_checkmate():
         if szachownica.turn:
